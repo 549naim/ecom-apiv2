@@ -79,7 +79,7 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        dd("ok");
+      
         // Revoke the user's current token
         $request->user()->currentAccessToken()->delete();
 

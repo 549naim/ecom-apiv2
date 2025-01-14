@@ -2,6 +2,8 @@
 
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProductController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Illuminate\Support\Facades\Route;
 
@@ -10,13 +12,26 @@ Route::middleware(['api', EnsureFrontendRequestsAreStateful::class])->group(func
     // User authentication routes
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
+        Route::put('/profile', [ProfileController::class, 'updateProfile']);
 
+        Route::middleware('is_admin')->group(function () {
+            Route::post('/products', [ProductController::class, 'store']);
+            Route::put('/products/{id}', [ProductController::class, 'update']);
+            Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+        });
+
+       
+    });
+
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/{id}', [ProductController::class, 'show']);
     // Password management routes
-    Route::post('/change-password', [AuthController::class, 'changePassword'])->middleware('auth:sanctum');
+   
     Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     
-    // Protected user profile route
-    Route::get('/profile', [AuthController::class, 'profile'])->middleware('auth:sanctum');
+ 
 });
