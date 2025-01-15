@@ -6,6 +6,7 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -15,14 +16,32 @@ class ProductController extends Controller
         // Get limit and offset from request, default to 20 and 0 respectively
         $limit = $request->query('limit', 20);
         $offset = $request->query('offset', 0);
-
-        // Retrieve all product fields with limit and offset
-        $products = Product::skip($offset)
+    
+        // Retrieve all products with category name, applying limit and offset
+        $products = Product::with('category') // Assuming the relationship is defined as 'category' in Product model
+            ->skip($offset)
             ->take($limit)
             ->get();
-
+    
+        // Transform the products to include category name in the response
+        $products = $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'description' => $product->description,
+                'price' => $product->price,
+                'image' => $product->image,
+                'stock' => $product->stock,
+                'sku' => $product->sku,
+                'created_at' => $product->created_at,
+                'updated_at' => $product->updated_at,
+                'category' => $product->category ? $product->category->name : null, // Include category name
+            ];
+        });
+    
         return response()->json($products);
     }
+    
 
 
     // Store a new product
@@ -57,6 +76,8 @@ class ProductController extends Controller
             'image' => $imagePath,
             'stock' => $request->stock,
             'sku' => $request->sku,
+            'category_id' => $request->category_id,
+            'slug' => Str::slug($request->name),
         ]);
 
         // Generate the full URL for the image
@@ -67,11 +88,25 @@ class ProductController extends Controller
 
     // Show a single product
     public function show($id)
-    {
-        $product = Product::findOrFail($id); // Find product by ID
+{
+    // Find product by ID with the associated category
+    $product = Product::with('category')->findOrFail($id);
 
-        return response()->json($product);
-    }
+    // Return the product with the category name
+    return response()->json([
+        'id' => $product->id,
+        'name' => $product->name,
+        'description' => $product->description,
+        'price' => $product->price,
+        'image' => $product->image,
+        'stock' => $product->stock,
+        'sku' => $product->sku,
+        'created_at' => $product->created_at,
+        'updated_at' => $product->updated_at,
+        'category' => $product->category ? $product->category->name : null, // Include category name
+    ]);
+}
+
 
     // Update an existing product
     public function update(Request $request, $id)
@@ -113,6 +148,7 @@ class ProductController extends Controller
             'image' => $imagePath,
             'stock' => $request->stock,
             'sku' => $request->sku,
+            'category_id' => $request->category_id,
         ]);
 
         // Generate the full URL for the image
@@ -136,4 +172,13 @@ class ProductController extends Controller
 
         return response()->json(['message' => 'Product deleted successfully']);
     }
+
+    public function searchByName($name)
+    {
+        $products = Product::where('name', 'like', '%' . $name . '%')->get();
+    
+        return response()->json($products);
+    }
+    
+
 }

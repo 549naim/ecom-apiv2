@@ -134,7 +134,7 @@ return [
     |
     */
 
-    'middleware' => [
+   'middleware' => [
         // Global Middleware Stack
         'web' => [
             \App\Http\Middleware\EncryptCookies::class,
@@ -152,9 +152,10 @@ return [
             // Replace route bindings like {user} in routes
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
+
+        // Register the custom is_admin middleware
         'is_admin' => \App\Http\Middleware\IsAdmin::class,
     ],
-
     /*
     |----------------------------------------------------------------------
     | Auth Configuration
@@ -181,6 +182,7 @@ return [
                 'driver' => 'eloquent',
                 'model' => \App\Models\User::class,
             ],
+            App\Providers\MiddlewareServiceProvider::class,
         ],
     ],
 

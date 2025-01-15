@@ -18,6 +18,10 @@ return new class extends Migration
             $table->decimal('price', 8, 2);
             $table->string('image')->nullable();
             $table->integer('stock')->default(0);
+            $table->integer('category_id')->default(0);
+            $table->integer('status')->default(0);
+            $table->string('slug');
+            $table->integer('latest')->default(0);
             $table->string('sku')->unique();
             $table->timestamps();
         });
