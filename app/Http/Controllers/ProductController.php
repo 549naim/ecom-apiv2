@@ -10,20 +10,20 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    // Fetch all products
     public function index(Request $request)
     {
         // Get limit and offset from request, default to 20 and 0 respectively
         $limit = $request->query('limit', 20);
         $offset = $request->query('offset', 0);
     
-        // Retrieve all products with category name, applying limit and offset
-        $products = Product::with('category') // Assuming the relationship is defined as 'category' in Product model
+        // Retrieve all products with category name and review count
+        $products = Product::with('category') // Assuming the relationship is defined as 'category' in the Product model
+            ->withCount('reviews') // Adding the review count
             ->skip($offset)
             ->take($limit)
             ->get();
     
-        // Transform the products to include category name in the response
+        // Transform the products to include category name and review count in the response
         $products = $products->map(function ($product) {
             return [
                 'id' => $product->id,
@@ -36,6 +36,7 @@ class ProductController extends Controller
                 'created_at' => $product->created_at,
                 'updated_at' => $product->updated_at,
                 'category' => $product->category ? $product->category->name : null, // Include category name
+                'review_count' => $product->reviews_count, // Include review count
             ];
         });
     
@@ -86,26 +87,31 @@ class ProductController extends Controller
         return response()->json(['message' => 'Product created successfully', 'product' => $product], 201);
     }
 
-    // Show a single product
-    public function show($id)
-{
-    // Find product by ID with the associated category
-    $product = Product::with('category')->findOrFail($id);
+            // Show a single product
+        // Show a single product
+        public function show($id)
+        {
+            // Find product by ID with the associated category and reviews count
+            $product = Product::with('category')
+                ->withCount('reviews') // Add review count
+                ->findOrFail($id);
 
-    // Return the product with the category name
-    return response()->json([
-        'id' => $product->id,
-        'name' => $product->name,
-        'description' => $product->description,
-        'price' => $product->price,
-        'image' => $product->image,
-        'stock' => $product->stock,
-        'sku' => $product->sku,
-        'created_at' => $product->created_at,
-        'updated_at' => $product->updated_at,
-        'category' => $product->category ? $product->category->name : null, // Include category name
-    ]);
-}
+            // Return the product with category name and review count
+            return response()->json([
+                'id' => $product->id,
+                'name' => $product->name,
+                'description' => $product->description,
+                'price' => $product->price,
+                'image' => $product->image,
+                'stock' => $product->stock,
+                'sku' => $product->sku,
+                'created_at' => $product->created_at,
+                'updated_at' => $product->updated_at,
+                'category' => $product->category ? $product->category->name : null, // Include category name
+                'review_count' => $product->reviews_count, // Include review count
+            ]);
+        }
+
 
 
     // Update an existing product
@@ -175,10 +181,60 @@ class ProductController extends Controller
 
     public function searchByName($name)
     {
-        $products = Product::where('name', 'like', '%' . $name . '%')->get();
+        $products = Product::where('name', 'like', '%' . $name . '%')
+            ->orWhere('sku', 'like', '%' . $name . '%')
+            ->get();
     
         return response()->json($products);
     }
+
+    public function filterByCategory($categoryId)
+{
+    // Retrieve products belonging to the specified category
+    $products = Product::where('category_id', $categoryId)
+        ->with('category') // Load category details if needed
+        ->get();
+
+    // Return the products as JSON response
+    return response()->json($products);
+}
+
+public function filterByPriceAndSort(Request $request)
+{
+    // Validate the request inputs
+    $validated = $request->validate([
+        'min_price' => 'nullable|numeric|min:0',
+        'max_price' => 'nullable|numeric|min:0',
+        'sort' => 'nullable|in:asc,desc',
+    ]);
+
+    // Extract values from request, with defaults
+    $minPrice = $validated['min_price'] ?? 0; // Default to 0
+    $maxPrice = $validated['max_price'] ?? null; // No upper limit by default
+    $sortDirection = $validated['sort'] ?? 'asc'; // Default to ascending order
+
+    // Build the query
+    $query = Product::query();
+
+    // Apply price range filter
+    if (!is_null($minPrice)) {
+        $query->where('price', '>=', $minPrice);
+    }
+    if (!is_null($maxPrice)) {
+        $query->where('price', '<=', $maxPrice);
+    }
+
+    // Apply sorting
+    $query->orderBy('price', $sortDirection);
+
+    // Retrieve the filtered and sorted products
+    $products = $query->with('category')->get();
+
+    // Return the response as JSON
+    return response()->json($products);
+}
+
+
     
 
 }

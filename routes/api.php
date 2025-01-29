@@ -7,6 +7,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\CouponController;
 
 // Group routes with Sanctum middleware to ensure they are stateful
 Route::middleware(['api', EnsureFrontendRequestsAreStateful::class])->group(function () {
@@ -18,6 +20,19 @@ Route::middleware(['api', EnsureFrontendRequestsAreStateful::class])->group(func
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::put('/profile', [ProfileController::class, 'updateProfile']);
+        Route::post('/reviews', [ReviewController::class, 'store']); // Add a review
+        Route::post('cart/apply-coupon', [CouponController::class, 'applyCoupon']);
+
+        // Create a new coupon
+      
+
+        // Get all coupons
+        Route::get('coupons', [CouponController::class, 'index']);
+
+        // Get a specific coupon
+        Route::get('coupons/{id}', [CouponController::class, 'show']);
+
+      
 
         Route::middleware('is_admin')->group(function () {
             Route::post('/products', [ProductController::class, 'store']);
@@ -28,6 +43,15 @@ Route::middleware(['api', EnsureFrontendRequestsAreStateful::class])->group(func
            
             Route::put('/categories/{id}', [CategoryController::class, 'update']);
             Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+            Route::post('coupons', [CouponController::class, 'store']);
+              // Update a coupon
+              Route::put('coupons/{id}', [CouponController::class, 'update']);
+
+
+            // Delete a coupon
+            Route::delete('coupons/{id}', [CouponController::class, 'destroy']);
+           
+           
         });
     });
 
@@ -36,6 +60,11 @@ Route::middleware(['api', EnsureFrontendRequestsAreStateful::class])->group(func
     Route::get('/categories/{id}', [CategoryController::class, 'show']);
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/products/search/{name}', [ProductController::class, 'searchByName']);
+    Route::get('/products/category/{categoryId}', [ProductController::class, 'filterByCategory']);
+    Route::post('/products/filter', [ProductController::class, 'filterByPriceAndSort']);
+    Route::get('/products/{id}/reviews', [ReviewController::class, 'index']);
+
+
 
     
 
